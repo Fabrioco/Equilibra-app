@@ -5,15 +5,8 @@ import { translateError } from "../config/error-translate";
 export type AuthContextType = {
   user: User | null;
   isLoading: boolean;
-  register: ({
-    name,
-    email,
-    password,
-  }: {
-    name: string;
-    email: string;
-    password: string;
-  }) => Promise<void>;
+  register: ({ name, email, password }: RegisterData) => Promise<void>;
+  login: ({ email, password }: LoginData) => Promise<void>;
 };
 
 type User = {
@@ -27,6 +20,22 @@ type User = {
   updatedAt: string;
 };
 
+type RegisterData = {
+  name: string;
+  email: string;
+  password: string;
+};
+
+type LoginData = {
+  email: string;
+  password: string;
+};
+
+type AuthResponse = {
+  token: string;
+  user: User;
+};
+
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined,
 );
@@ -34,13 +43,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  type RegisterData = {
-    name: string;
-    email: string;
-    password: string;
-  };
 
   const register = async ({ name, email, password }: RegisterData) => {
     setIsLoading(true);
@@ -61,7 +63,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!res.ok) {
         // Pega a mensagem do JSON ou usa o status do HTTP como backup
-        console.log(res);
         let msg = (data as any).message || `Erro do servidor (${res.status})`;
 
         if ((data as any).errors) {
@@ -83,8 +84,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const login = async ({ email, password }: LoginData) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      // 1. Verificar se a resposta foi bem-sucedida, mas está vazia
+      const contentType = res.headers.get("content-type");
+      let data = {};
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      }
+
+      if (!res.ok) {
+        // Pega a mensagem do JSON ou usa o status do HTTP como backup
+        let msg = (data as any).message || `Erro do servidor (${res.status})`;
+
+        if ((data as any).errors) {
+          const firstField = Object.keys((data as any).errors)[0];
+          msg = (data as any).errors[firstField][0];
+        }
+        throw new Error(translateError(msg));
+      }
+
+      setUser((data as AuthResponse).user);
+    } catch (error: any) {
+      // Se o erro for do JSON parse, ele cai aqui
+      if (error.message.includes("JSON Parse error")) {
+        throw new Error("O servidor respondeu de forma inválida.");
+      }
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, register }}>
+    <AuthContext.Provider value={{ user, isLoading, register, login }}>
       {children}
     </AuthContext.Provider>
   );
