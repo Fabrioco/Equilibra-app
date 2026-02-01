@@ -202,7 +202,7 @@ export default function RegisterScreen() {
               <Text className="text-gray-400 font-medium">
                 Já tem uma conta?{" "}
               </Text>
-              <Link href="/" asChild>
+              <Link href="/auth/login" asChild>
                 <TouchableOpacity>
                   <Text className="text-black font-black uppercase text-xs tracking-tighter">
                     Entrar
