@@ -1,6 +1,7 @@
 import React, { createContext } from "react";
 import { API_URL } from "../config/api";
 import { translateError } from "../config/error-translate";
+import Toast from "react-native-toast-message";
 
 export type AuthContextType = {
   user: User | null;
@@ -113,6 +114,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       setUser((data as AuthResponse).user);
+      Toast.show({
+        type: "success",
+        text1: "Sucesso",
+        text2: `Bem-vindo de volta, ${(data as AuthResponse).user.name}`,
+      });
     } catch (error: any) {
       // Se o erro for do JSON parse, ele cai aqui
       if (error.message.includes("JSON Parse error")) {

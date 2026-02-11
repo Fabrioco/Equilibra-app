@@ -37,13 +37,6 @@ export default function LoginScreen() {
 
     try {
       await login({ email, password });
-
-      // Sucesso!
-      Toast.show({
-        type: "success",
-        text1: "Bem-vindo! 🎉",
-        text2: `Olá, ${user?.name}.`,
-      });
     } catch (error: any) {
       Toast.show({
         type: "error",
